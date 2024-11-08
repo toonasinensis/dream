@@ -243,7 +243,7 @@ class PolicyExporterHIM(torch.nn.Module):
         latent_logvar = self.latent_logvar(encoded)
         z = self.reparameterize(latent_mu,latent_logvar) 
 
-        return self.actor(torch.cat((obs_history[:, 0:45], vel, z), dim=1))
+        return self.actor(torch.cat((obs_history[:, 0:45], vel, z), dim=1)),vel
 
     def export(self, path):
         os.makedirs(path, exist_ok=True)

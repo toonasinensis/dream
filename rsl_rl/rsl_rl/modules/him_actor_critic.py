@@ -93,7 +93,7 @@ class HIMActorCritic(nn.Module):
         self.num_actions = num_actions
         self.num_one_step_obs = num_one_step_obs
 
-        mlp_input_dim_a = num_one_step_obs + 3 + 16
+        mlp_input_dim_a = num_one_step_obs + 3+1+3*4 + 16
         mlp_input_dim_c = num_critic_obs
 
         # Estimator

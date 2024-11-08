@@ -37,12 +37,13 @@ class HIMEstimator(nn.Module):
         self.temperature = temperature
 
         # Encoder
-
+        
+        self.ested_state_num = 3+1+4*3
 
  # Build Decoder
         modules = []
         # activation_fn = get_activation(activation)
-        decoder_input_dim = latent_dims + 3
+        decoder_input_dim = latent_dims + self.ested_state_num
         modules.extend(
             [nn.Linear(decoder_input_dim, decoder_hidden_dims[0]),
             activation]
@@ -66,8 +67,9 @@ class HIMEstimator(nn.Module):
         HIS_enc_layers += [nn.Linear(enc_input_dim, latent_dims*4)]#why times 4
         self.encoder = nn.Sequential(*HIS_enc_layers)
 
-        self.vel_mu = nn.Linear(latent_dims * 4, 3)
-        self.vel_logvar = nn.Linear(latent_dims * 4, 3)
+
+        self.vel_mu = nn.Linear(latent_dims * 4, self.ested_state_num)
+        self.vel_logvar = nn.Linear(latent_dims * 4, self.ested_state_num)
 
         self.latent_mu = nn.Linear(latent_dims * 4, latent_dims)
         self.latent_logvar = nn.Linear(latent_dims * 4, latent_dims)
@@ -116,14 +118,18 @@ class HIMEstimator(nn.Module):
             self.learning_rate = lr
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = self.learning_rate
-                
+        #question
         vel = next_critic_obs[:, self.num_one_step_obs:self.num_one_step_obs+3].detach()
+        base_height = next_critic_obs[:, self.num_one_step_obs+3:self.num_one_step_obs+3+1].detach()
+        # print("vel,",vel,"base_height",base_height)
+        feet_pos = next_critic_obs[:, self.num_one_step_obs+3+1:self.num_one_step_obs+3+1+12].detach()
+        privi_state = next_critic_obs[:, self.num_one_step_obs:self.num_one_step_obs+self.ested_state_num].detach()
         next_obs = next_critic_obs.detach()[:, 3:self.num_one_step_obs+3]
 
         vel_pred,z,latent_mu,latent_logvar= self.encode(obs_history)
         # z_t = self.target(next_obs)
         # pred_vel, z_s = z_s[..., :3], z_s[..., 3:]
-        estimation_loss = F.mse_loss(vel_pred, vel)
+        estimation_loss = F.mse_loss(vel_pred, privi_state)
         obs_next_pred =self.decode(z,vel_pred)
         reconstruct_loss = F.mse_loss(obs_next_pred, next_obs)
 

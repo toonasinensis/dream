@@ -35,7 +35,7 @@ class LeggedRobotCfg(BaseConfig):
         num_envs = 4096
         num_one_step_observations = 45
         num_observations = num_one_step_observations * 6
-        num_one_step_privileged_obs = 45 + 3 + 3 + 187 # additional: base_lin_vel, external_forces, scan_dots
+        num_one_step_privileged_obs = 45 + 3  + 1 + 4*3 + 3+ 187 # additional: base_lin_vel,base_hieght,foot_pos, scan_dots,external_forces
         num_privileged_obs = num_one_step_privileged_obs * 1 # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
         num_actions = 12
         env_spacing = 3.  # not used with heightfields/trimeshes 
@@ -193,6 +193,8 @@ class LeggedRobotCfg(BaseConfig):
             dof_pos = 1.0
             dof_vel = 0.05
             height_measurements = 5.0
+            base_height_measurements = 5.0
+            foot_pos_measurements = 2.0
         clip_observations = 100.
         clip_actions = 100.
 

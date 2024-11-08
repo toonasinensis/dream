@@ -38,26 +38,30 @@ from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Log
 import numpy as np
 import torch
 
-
+env_num =1
 def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
-    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 51)
+    env_cfg.env.num_envs = min(env_cfg.env.num_envs, env_num)
     env_cfg.terrain.num_rows = 10
     env_cfg.terrain.num_cols = 8
     env_cfg.terrain.curriculum = True
     env_cfg.terrain.max_init_terrain_level = 9
-    env_cfg.noise.add_noise = False
-    env_cfg.domain_rand.randomize_friction = False
-    env_cfg.domain_rand.push_robots = False
-    env_cfg.domain_rand.disturbance = False
-    env_cfg.domain_rand.randomize_payload_mass = False
+    env_cfg.noise.add_noise = True
+    env_cfg.domain_rand.randomize_friction = True
+    env_cfg.domain_rand.push_robots = True
+    env_cfg.domain_rand.disturbance = True
+    env_cfg.domain_rand.randomize_payload_mass = True
     env_cfg.commands.heading_command = False
+    env_cfg.commands.resampling_time = 1
     # env_cfg.terrain.mesh_type = 'plane'
     # prepare environment
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
-    env.commands[:, 0] = x_vel
-    env.commands[:, 1] = y_vel
+    vx = 2*torch.rand(env_num)-1
+    vy = 2*torch.rand(env_num)-1
+
+    env.commands[:, 0] = vx
+    env.commands[:, 1] = vy
     env.commands[:, 2] = yaw_vel
 
     obs = env.get_observations()
@@ -87,10 +91,23 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     img_idx = 0
 
     for i in range(10*int(env.max_episode_length)):
-    
-        actions = policy_exp(obs.detach())
-        env.commands[:, 0] = x_vel
-        env.commands[:, 1] = y_vel
+        
+        # vx = 2*torch.rand(51)-1
+        # vy = 2*torch.rand(51)-1
+        #  vx = 0.6
+        #  vy = 
+        actions,state_ested = policy_exp(obs.detach())
+        v_est = state_ested[:,0:3].detach().cpu().numpy()/env.obs_scales.lin_vel
+        base_height = state_ested[:,3].detach().cpu().numpy()/env.obs_scales.base_height_measurements
+        
+        vcmd = np.zeros([env_num,3])
+        vcmd[:,0]= vx.detach().numpy()
+        vcmd[:,1]= vy.detach().numpy()
+        np.set_printoptions(precision=2)
+
+        # print("h :",env.measured_base_height, "est :",v_est,base_height)
+        env.commands[:, 0] = 0.5
+        env.commands[:, 1] = 0
         env.commands[:, 2] = yaw_vel
         obs, _, rews, dones, infos, _, _ = env.step(actions.detach())
 
@@ -102,7 +119,7 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
         if MOVE_CAMERA:
             camera_position += camera_vel * env.dt
             env.set_camera(camera_position, camera_position + camera_direction)
-
+        # print(env.measured_base_height)
         if i < stop_state_log:
             logger.log_states(
                 {

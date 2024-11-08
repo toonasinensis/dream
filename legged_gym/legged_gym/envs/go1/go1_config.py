@@ -88,12 +88,12 @@ class Go1RoughCfg( LeggedRobotCfg ):
   
     class rewards( LeggedRobotCfg.rewards ):
         class scales:
-             termination = -0.0
+            termination = -0.0
             tracking_lin_vel = 2.0#2.0
             tracking_ang_vel = 1.0#0.5
             lin_vel_z = -2.0
             ang_vel_xy = -0.05
-            orientation = -1.0#-1
+            orientation = -2.0#-1
             dof_acc = -2.5e-7
             joint_power = -2e-7
             base_height = -5.0#-5.0

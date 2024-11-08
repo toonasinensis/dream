@@ -94,7 +94,10 @@ def playMujoco(policy, cfg):
       obs_buf = np.concatenate((obs, obs_buf[:, :-cfg.env.num_one_step_observations]), axis=-1).astype(np.float32)
 
       # clip actions
-      action = np.clip(policy(torch.tensor(obs_buf))[0].detach().numpy(), -cfg.normalization.clip_actions, cfg.normalization.clip_actions)
+      action_ =policy(torch.tensor(obs_buf))[0].detach().numpy()
+      # print()
+      vest = policy(torch.tensor(obs_buf))[1].detach().numpy()
+      action = np.clip(action_.squeeze(), -cfg.normalization.clip_actions, cfg.normalization.clip_actions)
       if cfg.sim_config.use_filter:
         action_filtered = low_pass_action_filter(action, last_action)
       last_action = action
