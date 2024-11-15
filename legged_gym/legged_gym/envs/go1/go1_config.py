@@ -56,24 +56,26 @@ class Go1RoughCfg( LeggedRobotCfg ):
     class control( LeggedRobotCfg.control ):
         # PD Drive parameters:
         control_type = 'P'
-        stiffness = {'joint': 40.0}  # [N*m/rad]
-        damping = {'joint': 1.0}     # [N*m*s/rad]
+        stiffness = {'joint': 20.0}  # [N*m/rad]
+        damping = {'joint': 0.50}     # [N*m*s/rad]
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.25
         # decimation: Number of control action updates @ sim DT per policy DT
         decimation = 4
-        hip_reduction = 1.0
+        hip_reduction = 0.5
 
     class commands( LeggedRobotCfg.commands ):
             curriculum = True
             max_curriculum = 2.0
+            vel_x_max_curriculum =3.0
+            vel_y_max_curriculum =3.0
             num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
             resampling_time = 10. # time before command are changed[s]
             heading_command = True # if true: compute ang vel command from heading error
             class ranges( LeggedRobotCfg.commands.ranges):
-                lin_vel_x = [-1.0, 1.0] # min max [m/s]
-                lin_vel_y = [-1.0, 1.0]   # min max [m/s]
-                ang_vel_yaw = [-3.14, 3.14]    # min max [rad/s]
+                lin_vel_x = [-0.50, 0.50] # min max [m/s]
+                lin_vel_y = [-0.50, 0.50]   # min max [m/s]
+                ang_vel_yaw = [-1.14, 1.14]    # min max [rad/s]
                 heading = [-3.14, 3.14]
 
     class asset( LeggedRobotCfg.asset ):
@@ -89,36 +91,30 @@ class Go1RoughCfg( LeggedRobotCfg ):
     class rewards( LeggedRobotCfg.rewards ):
         class scales:
             termination = -0.0
-            tracking_lin_vel = 2.0#2.0
-            tracking_ang_vel = 1.0#0.5
+            foot_clearance= -0.05 #-0.05
+            foot_mirror = -0.01 # -0.05
+            foot_slide = -0.05
+            
+            joint_power = -2e-5
+            tracking_lin_vel = 1.0
+            tracking_ang_vel = 0.5
             lin_vel_z = -2.0
             ang_vel_xy = -0.05
-            orientation = -2.0#-1
             dof_acc = -2.5e-7
-            joint_power = -2e-7
-            base_height = -5.0#-5.0
-            foot_clearance = -0.1
+            base_height = -1.0
             action_rate = -0.01
-            smoothness = -0.01#add thiss
-            feet_air_time =  0.0
-            collision = -0.0
-            stumble = -0.#add this 
-            stand_still = -0.
-            torques = -0.0
-            dof_vel = -0.0
-            dof_pos_limits = -0.0
-            dof_vel_limits = -0.0
-            torque_limits = -0.0
-
+            smoothness= -0.01 
+            orientation= -0.2
+            stumble = -1.0
 
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 1.
         soft_torque_limit = 1.
-        base_height_target = 0.30
+        base_height_target = 0.35
         max_contact_force = 100. # forces above this value are penalized
-        clearance_height_target = -0.20
+        clearance_height_target = -0.25
 
 class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):

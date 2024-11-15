@@ -38,7 +38,7 @@ from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Log
 import numpy as np
 import torch
 
-env_num =1
+env_num =100
 def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
@@ -53,16 +53,15 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg.domain_rand.disturbance = True
     env_cfg.domain_rand.randomize_payload_mass = True
     env_cfg.commands.heading_command = False
-    env_cfg.commands.resampling_time = 1
+    env_cfg.commands.resampling_time = 10000000000000
     # env_cfg.terrain.mesh_type = 'plane'
     # prepare environment
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
     vx = 2*torch.rand(env_num)-1
     vy = 2*torch.rand(env_num)-1
+    env.focus = False
 
-    env.commands[:, 0] = vx
-    env.commands[:, 1] = vy
-    env.commands[:, 2] = yaw_vel
+    
 
     obs = env.get_observations()
     # load policy
@@ -84,12 +83,16 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     robot_index = 0 # which robot is used for logging
     joint_index = 1 # which joint is used for logging
     stop_state_log = 100 # number of steps before plotting states
+    env.max_episode_length = 1000000
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
     camera_vel = np.array([1., 1., 0.])
     camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
     img_idx = 0
-
+    count = 0
+    env.commands[:, 0] = 0
+    env.commands[:, 1] = 0
+    env.commands[:, 2] = 0
     for i in range(10*int(env.max_episode_length)):
         
         # vx = 2*torch.rand(51)-1
@@ -100,15 +103,22 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
         v_est = state_ested[:,0:3].detach().cpu().numpy()/env.obs_scales.lin_vel
         base_height = state_ested[:,3].detach().cpu().numpy()/env.obs_scales.base_height_measurements
         
-        vcmd = np.zeros([env_num,3])
-        vcmd[:,0]= vx.detach().numpy()
-        vcmd[:,1]= vy.detach().numpy()
+        # vcmd = np.zeros([env_num,3])
+        # vcmd[:,0]= vx.detach().numpy()
+        # vcmd[:,1]= vy.detach().numpy()
         np.set_printoptions(precision=2)
+        # count+=1
+        print("h :",env.measured_base_height, "est :",v_est,base_height)
+        env.commands[:, 0] = 1.0
+        env.commands[:, 1:2] = 0.0
 
-        # print("h :",env.measured_base_height, "est :",v_est,base_height)
-        env.commands[:, 0] = 0.5
-        env.commands[:, 1] = 0
-        env.commands[:, 2] = yaw_vel
+        # if count>50:
+        #     env.commands[:, 1] = 0.0
+        # else:
+        #     env.commands[:, 1] = -1.5
+
+        env.commands[:, 2] = 0
+        # print(env.commands[:, 2])
         obs, _, rews, dones, infos, _, _ = env.step(actions.detach())
 
         if RECORD_FRAMES:

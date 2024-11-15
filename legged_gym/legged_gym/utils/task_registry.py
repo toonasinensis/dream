@@ -149,9 +149,9 @@ class TaskRegistry():
         resume = train_cfg.runner.resume
         if resume:
             # load previously trained model
-            resume_path = get_load_path(log_root, load_run=train_cfg.runner.load_run, checkpoint=train_cfg.runner.checkpoint)
-            print(f"Loading model from: {resume_path}")
-            # resume_path = '/home/lab/Desktop/xie/HIMLoco/legged_gym/logs/rough_go1/stumble/model_1060.pt'
+            # resume_path = get_load_path(log_root, load_run=train_cfg.runner.load_run, checkpoint=train_cfg.runner.checkpoint)
+            # print(f"Loading model from: {resume_path}")
+            resume_path = '/home/lab/Desktop/xie/dream/legged_gym/logs/rough_go1/Nov15_01-26-53_/model_6520.pt'
             runner.load(resume_path)
         return runner, train_cfg
 

@@ -38,6 +38,7 @@ import torch
 class BaseTask():
 
     def __init__(self, cfg, sim_params, physics_engine, sim_device, headless):
+        self.focus = False #锁定相机视角(仅限play模式使用)
         self.gym = gymapi.acquire_gym()
 
         self.sim_params = sim_params
@@ -98,6 +99,17 @@ class BaseTask():
             self.gym.subscribe_viewer_keyboard_event(
                 self.viewer, gymapi.KEY_V, "toggle_viewer_sync")
 
+            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_W, "w")
+            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_A, "a")
+            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_S, "s")
+            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_D, "d")
+            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_E, "e")
+            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_Q, "q")
+
+            self.gym.subscribe_viewer_keyboard_event(
+                self.viewer, gymapi.KEY_F, "f")
+
+
     def get_observations(self):
         return self.obs_buf
     
@@ -117,11 +129,22 @@ class BaseTask():
     def step(self, actions):
         raise NotImplementedError
 
+    def _set_camera(self,pos,lookat):
+        cam_pos = gymapi.Vec3(*pos)
+        cam_target = gymapi.Vec3(*lookat)
+        self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+
+
     def render(self, sync_frame_time=True):
         if self.viewer:
             # check for window closed
             if self.gym.query_viewer_has_closed(self.viewer):
                 sys.exit()
+            
+            if self.focus:    
+                self.camera_direction = self.root_states[0, :3].cpu().numpy()
+                self.camera_pos = self.root_states[0, :3].cpu().numpy() + np.array([-0.5, -1, 0.4])
+                self._set_camera(self.camera_pos, self.camera_direction)
 
             # check for keyboard events
             for evt in self.gym.query_viewer_action_events(self.viewer):
@@ -129,6 +152,25 @@ class BaseTask():
                     sys.exit()
                 elif evt.action == "toggle_viewer_sync" and evt.value > 0:
                     self.enable_viewer_sync = not self.enable_viewer_sync
+                elif evt.action == 'f' and evt.value > 0:
+                    self.focus = not self.focus
+                if self.focus:
+                    if evt.action == 'w' and evt.value > 0:
+                        self.commands[:, 0] += 0.2
+                    elif evt.action == 's' and evt.value > 0:
+                        self.commands[:, 0] -= 0.2
+                    elif evt.action == 'a' and evt.value > 0:
+                        self.commands[:, 1] += 0.2
+                    elif evt.action == 'd' and evt.value > 0:
+                        self.commands[:, 1] -= 0.2
+                    elif evt.action == 'q' and evt.value > 0:
+                        self.commands[:, 2] += 0.1
+                    elif evt.action == 'e' and evt.value > 0:
+                        self.commands[:, 2] -= 0.1
+                    # if evt.value > 0:
+                    #     print("Set command as [x,y,yaw]: [{}, {}, {}]".format(round(self.commands[:, 0].item(), 2) , 
+                    #                                                 round(self.commands[:, 1].item(), 2),
+                    #                                                 round(self.commands[:, 2].item(), 2)))
 
             # fetch results
             if self.device != 'cpu':
