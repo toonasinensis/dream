@@ -226,25 +226,21 @@ class PolicyExporterHIM(torch.nn.Module):
     def __init__(self, actor_critic):
         super().__init__()
         self.actor = copy.deepcopy(actor_critic.actor)
-        self.vel_mu = copy.deepcopy(actor_critic.estimator.vel_mu)
-        self.vel_logvar = copy.deepcopy(actor_critic.estimator.vel_logvar)
-        self.latent_mu= copy.deepcopy(actor_critic.estimator.latent_mu)
-        self.latent_logvar= copy.deepcopy(actor_critic.estimator.latent_logvar)
-        self.estimator = copy.deepcopy(actor_critic.estimator.encoder)
+        self.estimator = copy.deepcopy(actor_critic.estimator)
+        # self.encoder = copy.deepcopy(actor_critic.estimator.encoder)
 
-
-
+    # old shit
     def forward(self, obs_history):
-        encoded = self.estimator(obs_history.detach())
-        vel_mu = self.vel_mu(encoded)
-        vel_logvar = self.vel_logvar(encoded)
-        vel = self.reparameterize(vel_mu, vel_logvar)
-        latent_mu = self.latent_mu(encoded)
-        latent_logvar = self.latent_logvar(encoded)
-        z = self.reparameterize(latent_mu,latent_logvar) 
-
-        return self.actor(torch.cat((obs_history[:, 0:45], vel, z), dim=1)),vel
-
+        vel, latent = self.estimator(obs_history)
+        action = self.actor(torch.cat((obs_history[:,0:45], vel, latent), dim=1))
+        return action
+    
+    # new shit
+    # def forward(self, obs_history):
+    #     vel, latent = self.estimator(obs_history)
+    #     action = self.actor(torch.cat((obs_history[:,0:48], vel, latent), dim=1))
+    #     return action
+    
     def export(self, path):
         os.makedirs(path, exist_ok=True)
         path = os.path.join(path, 'policy.pt')
@@ -252,13 +248,10 @@ class PolicyExporterHIM(torch.nn.Module):
         traced_script_module = torch.jit.script(self)
         traced_script_module.save(path)
     
+    # def forward(self, obs_history):
+    #     parts = self.estimator(obs_history)[:, 0:35] # 3 + 32
+    #     vel, z = parts[..., :3], parts[..., 3:]
+    #     z = F.normalize(z, dim=-1, p=2.0)
+    #     return self.actor(torch.cat((obs_history[:, 0:45], vel, z), dim=1))
+
     
-    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
-            """
-            :param mu: (Tensor) Mean of the latent Gaussian
-            :param logvar: (Tensor) Standard deviation of the latent Gaussian
-            :return:
-            """
-            std = torch.exp(0.5 * logvar)
-            eps = torch.randn_like(std)
-            return eps * std + mu
