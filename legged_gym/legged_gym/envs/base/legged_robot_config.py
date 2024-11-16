@@ -167,14 +167,14 @@ class LeggedRobotCfg(BaseConfig):
     class rewards:
         class scales:
             termination = -0.0
-            tracking_lin_vel = 1.0
-            tracking_ang_vel = 0.5
-            lin_vel_z = -2.0
-            ang_vel_xy = -0.05
+            tracking_lin_vel = 0.0
+            tracking_ang_vel = 0.0
+            lin_vel_z = -0.0
+            ang_vel_xy = -0.00
             orientation = -0.
             torques = -0.00001
             dof_vel = -0.
-            dof_acc = -2.5e-7
+            dof_acc = -0
             base_height = -0. 
             feet_air_time =  1.0
             collision = -1.
@@ -188,7 +188,7 @@ class LeggedRobotCfg(BaseConfig):
         soft_dof_vel_limit = 1.
         soft_torque_limit = 1.
         base_height_target = 1.
-        max_contact_force = 100. # forces above this value are penalized
+        max_contact_force = 0. # forces above this value are penalized
         clearance_height_target = 0.09
 
     class normalization:

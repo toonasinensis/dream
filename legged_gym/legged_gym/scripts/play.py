@@ -47,13 +47,14 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg.terrain.num_cols = 8
     env_cfg.terrain.curriculum = True
     env_cfg.terrain.max_init_terrain_level = 9
-    env_cfg.noise.add_noise = True
-    env_cfg.domain_rand.randomize_friction = True
-    env_cfg.domain_rand.push_robots = True
-    env_cfg.domain_rand.disturbance = True
-    env_cfg.domain_rand.randomize_payload_mass = True
+    env_cfg.noise.add_noise = False
+    env_cfg.domain_rand.randomize_friction = False
+    env_cfg.domain_rand.push_robots = False
+    env_cfg.domain_rand.disturbance = False
+    env_cfg.domain_rand.randomize_payload_mass = False
     env_cfg.commands.heading_command = False
     env_cfg.commands.resampling_time = 10000000000000
+    env_cfg.env.episode_length_s = 1000
     # env_cfg.terrain.mesh_type = 'plane'
     # prepare environment
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
@@ -83,6 +84,7 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     robot_index = 0 # which robot is used for logging
     joint_index = 1 # which joint is used for logging
     stop_state_log = 100 # number of steps before plotting states
+    # env.episode_length_s = 1000
     env.max_episode_length = 1000000
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)

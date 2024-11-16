@@ -47,6 +47,7 @@ from legged_gym.utils.terrain import Terrain
 from legged_gym.utils.math import quat_apply_yaw, wrap_to_pi, torch_rand_sqrt_float
 from legged_gym.utils.helpers import class_to_dict
 from .legged_robot_config import LeggedRobotCfg
+import random
 
 class LeggedRobot(BaseTask):
     def __init__(self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless):
@@ -92,6 +93,7 @@ class LeggedRobot(BaseTask):
         self.delayed_actions = self.actions.clone().view(self.num_envs, 1, self.num_actions).repeat(1, self.cfg.control.decimation, 1)
         delay_steps = torch.randint(0, self.cfg.control.decimation*6, (self.num_envs, 1), device=self.device)
         if self.cfg.domain_rand.delay:
+            print("shit")
             for i in range(self.cfg.control.decimation):
                 self.delayed_actions[:, i] = self.last_actions + (self.actions - self.last_actions) * (i >= delay_steps)
         # step physics and render each frame
@@ -232,7 +234,8 @@ class LeggedRobot(BaseTask):
             self.extras["time_outs"] = self.time_out_buf
 
         self.episode_length_buf[env_ids] = 0
-    
+        self.lag_buffer[env_ids,:,:] = 0
+
     def compute_reward(self):
         """ Compute rewards
             Calls each reward function which had a non-zero scale (processed in self._prepare_reward_function())
@@ -537,7 +540,14 @@ class LeggedRobot(BaseTask):
         #pd controller
         actions_scaled = actions * self.cfg.control.action_scale
         actions_scaled[:, [0, 3, 6, 9]] *=self.cfg.control.hip_reduction
-        self.joint_pos_target = self.default_dof_pos + actions_scaled
+
+        if self.cfg.domain_rand.randomize_lag_timesteps:
+            # print("eat",self.randomized_lag)
+            self.lag_buffer = torch.cat([self.lag_buffer[:,1:,:].clone(),actions_scaled.unsqueeze(1).clone()],dim=1)
+            randomized_lag = np.random.randint(0, self.cfg.domain_rand.lag_timesteps, size=self.num_envs).tolist()
+            self.joint_pos_target = self.lag_buffer[self.num_envs_indexes, self.randomized_lag,:] + self.default_dof_pos
+        else:
+            self.joint_pos_target = actions_scaled + self.default_dof_pos
 
         control_type = self.cfg.control.control_type
         if control_type=="P":
@@ -765,6 +775,8 @@ class LeggedRobot(BaseTask):
         #store friction and restitution
         self.friction_coeffs = torch.ones(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
         self.restitution_coeffs = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
+       
+        self.lag_buffer = torch.zeros(self.num_envs,self.cfg.domain_rand.lag_timesteps,self.num_actions,device=self.device,requires_grad=False)
 
 
     def _prepare_reward_function(self):
@@ -903,7 +915,11 @@ class LeggedRobot(BaseTask):
             self.payload = torch_rand_float(self.cfg.domain_rand.payload_mass_range[0], self.cfg.domain_rand.payload_mass_range[1], (self.num_envs, 1), device=self.device)
         if self.cfg.domain_rand.randomize_com_displacement:
             self.com_displacement = torch_rand_float(self.cfg.domain_rand.com_displacement_range[0], self.cfg.domain_rand.com_displacement_range[1], (self.num_envs, 3), device=self.device)
-            
+        
+        if self.cfg.domain_rand.randomize_lag_timesteps:
+            self.num_envs_indexes = list(range(0,self.num_envs))
+            self.randomized_lag = np.random.randint(0, self.cfg.domain_rand.lag_timesteps, size=self.num_envs).tolist()
+
         for i in range(self.num_envs):
             # create env instance
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))

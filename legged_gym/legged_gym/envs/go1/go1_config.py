@@ -87,7 +87,13 @@ class Go1RoughCfg( LeggedRobotCfg ):
         privileged_contacts_on = ["base", "thigh", "calf"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
         flip_visual_attachments = False # Some .obj meshes must be flipped from y-up to z-up
-  
+    class domain_rand( LeggedRobotCfg.domain_rand):
+        
+        delay = False # 原版delay
+        
+        randomize_lag_timesteps = True
+        lag_timesteps = 6
+    
     class rewards( LeggedRobotCfg.rewards ):
         class scales:
             termination = -0.0
