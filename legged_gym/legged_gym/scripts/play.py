@@ -38,7 +38,7 @@ from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Log
 import numpy as np
 import torch
 
-
+env_num =100
 def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
@@ -53,6 +53,7 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg.domain_rand.disturbance = False
     env_cfg.domain_rand.randomize_payload_mass = False
     env_cfg.commands.heading_command = False
+    env_cfg.commands.resampling_time = 10000000000000
     # env_cfg.terrain.mesh_type = 'plane'
     # prepare environment
     
@@ -60,11 +61,11 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg.commands.resampling_time = 120 # 2分钟更新一次命令
     
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
+    vx = 2*torch.rand(env_num)-1
+    vy = 2*torch.rand(env_num)-1
+    env.focus = False
 
-    env.focus = True
-    # env.commands[:, 0] = x_vel
-    # env.commands[:, 1] = y_vel
-    # env.commands[:, 2] = yaw_vel
+    
 
     obs = env.get_observations()
     # load policy
@@ -83,12 +84,16 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
     robot_index = 0 # which robot is used for logging
     joint_index = 1 # which joint is used for logging
     stop_state_log = 100 # number of steps before plotting states
+    env.max_episode_length = 1000000
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
     camera_vel = np.array([1., 1., 0.])
     camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
     img_idx = 0
-
+    count = 0
+    env.commands[:, 0] = 0
+    env.commands[:, 1] = 0
+    env.commands[:, 2] = 0
     for i in range(10*int(env.max_episode_length)):
           
         actions = policy(obs.detach())
