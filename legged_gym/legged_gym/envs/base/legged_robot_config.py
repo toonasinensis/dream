@@ -29,13 +29,13 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from .base_config import BaseConfig
-
 class LeggedRobotCfg(BaseConfig):
     class env:
         num_envs = 4096
         num_one_step_observations = 45
-        num_observations = num_one_step_observations * 6
-        num_one_step_privileged_obs = 45 + 3  + 1 + 4*3 + 3+ 187 # additional: base_lin_vel,base_hieght,foot_pos, scan_dots,external_forces
+        history_length = 6
+        num_observations = num_one_step_observations * history_length
+        num_one_step_privileged_obs = 45 + 3 + 3 + 187 # additional: base_lin_vel, external_forces, scan_dots
         num_privileged_obs = num_one_step_privileged_obs * 1 # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
         num_actions = 12
         env_spacing = 3.  # not used with heightfields/trimeshes 
@@ -63,7 +63,9 @@ class LeggedRobotCfg(BaseConfig):
         num_rows= 10 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
+        # terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
+        terrain_proportions = [0.1, 0.1, 0.35, 0.25, 0.2]
+        # terrain_proportions = [0.0, 0.0, 0.5, 0.5, 0.0]
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
 
@@ -132,8 +134,9 @@ class LeggedRobotCfg(BaseConfig):
         link_mass_range = [0.9, 1.1]
         
         randomize_friction = True
-        friction_range = [0.2, 1.25]
-        
+        # friction_range = [0.2, 1.25]
+        friction_range = [0.6, 2.]
+
         randomize_restitution = False
         restitution_range = [0., 1.0]
         
@@ -158,6 +161,10 @@ class LeggedRobotCfg(BaseConfig):
         max_push_vel_xy = 1.
 
         delay = True
+        
+        randomize_lag_timesteps = True
+        lag_timesteps = 6
+
 
     class rewards:
         class scales:
@@ -193,8 +200,6 @@ class LeggedRobotCfg(BaseConfig):
             dof_pos = 1.0
             dof_vel = 0.05
             height_measurements = 5.0
-            base_height_measurements = 5.0
-            foot_pos_measurements = 2.0
         clip_observations = 100.
         clip_actions = 100.
 
@@ -266,7 +271,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         policy_class_name = 'HIMActorCritic'
         algorithm_class_name = 'HIMPPO'
         num_steps_per_env = 100 # per iteration
-        max_iterations = 200000 # number of policy updates
+        max_iterations = 20000 # number of policy updates
 
         # logging
         save_interval = 20 # check for potential saves every this many iterations

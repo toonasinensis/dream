@@ -1,0 +1,100 @@
+<mujocoinclude>
+    <compiler angle="radian" meshdir="../meshes/" />
+    <size njmax="500" nconmax="100" />
+    <asset>
+        <mesh name="trunk" file="trunk.stl" />
+        <mesh name="hip" file="hip.stl" />
+        <mesh name="thigh" file="thigh.stl" />
+        <mesh name="calf" file="calf.stl" />
+        <mesh name="thigh_mirror" file="thigh_mirror.stl" />
+    </asset>
+    <worldbody>
+        <geom size="0.0005 0.0005 0.0005" type="box" contype="0" conaffinity="0" group="1" />
+        <body name="base" pos="0 0 0.505">
+
+            <site name="imu" pos="0 0 0" size="0.01" type="sphere" rgba="0 1 0 1"/>
+
+            <inertial pos="0.0222572 0.00199616 -0.000499041" quat="-0.00342359 0.705205 0.0001104 0.708995" mass="5.214" diaginertia="0.0716625 0.0630165 0.0168112" />
+            <joint name="floating_base" type="free" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" mesh="trunk" />
+            <geom size="0.1881 0.04675 0.057" type="box" />
+            <geom size="0.0075 0.0075 0.002" type="box" contype="0" conaffinity="0" group="1" />
+            <body name="FL_hip" pos="0.1881 0.04675 0">
+                <inertial pos="-0.005657 -0.008752 -0.000102" quat="0.483596 0.497198 0.51272 0.50601" mass="0.591" diaginertia="0.000619523 0.000400592 0.000333571" />
+                <joint name="FL_hip_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-0.863 0.863" damping="0.01" frictionloss="0.2" />
+                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="hip" />
+                <body name="FL_thigh" pos="0 0.08 0">
+                    <inertial pos="-0.003342 -0.018054 -0.033451" quat="0.765814 0.075943 -0.0246609 0.638086" mass="0.92" diaginertia="0.0045757 0.00444045 0.000641595" />
+                    <joint name="FL_thigh_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-0.686 4.501" damping="0.01" frictionloss="0.2" />
+                    <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="thigh" />
+                    <geom size="0.1065 0.01225 0.017" pos="-0.015 0 -0.1065" quat="0.670882 0 0.741564 0" type="box" rgba="1 0.423529 0.0392157 1" />
+                    <body name="FL_calf" pos="0 0 -0.213">
+                        <inertial pos="0.00429862 0.000976676 -0.146197" quat="0.691246 0.00357467 0.00511118 0.722592" mass="0.195862" diaginertia="0.00149767 0.00148468 3.58427e-05" />
+                        <joint name="FL_calf_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.818 -0.888" damping="0.01" frictionloss="0.2" />
+                        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="calf" />
+                        <geom size="0.1065 0.008 0.008" pos="0 0 -0.1065" quat="0.707107 0 0.707107 0" type="box" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.01" pos="0 0 -0.213" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.02" pos="0 0 -0.213" rgba="1 0.423529 0.0392157 0" />
+                    </body>
+                </body>
+            </body>
+            <body name="RL_hip" pos="-0.1881 0.04675 0">
+                <inertial pos="0.005657 -0.008752 -0.000102" quat="0.51272 0.50601 0.483596 0.497198" mass="0.591" diaginertia="0.000619523 0.000400592 0.000333571" />
+                <joint name="RL_hip_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-0.863 0.863" damping="0.01" frictionloss="0.2" />
+                <geom quat="0 0 1 0" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="hip" />
+                <body name="RL_thigh" pos="0 0.08 0">
+                    <inertial pos="-0.003342 -0.018054 -0.033451" quat="0.765814 0.075943 -0.0246609 0.638086" mass="0.92" diaginertia="0.0045757 0.00444045 0.000641595" />
+                    <joint name="RL_thigh_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-0.686 4.501" damping="0.01" frictionloss="0.2" />
+                    <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="thigh" />
+                    <geom size="0.1065 0.01225 0.017" pos="-0.015 0 -0.1065" quat="0.670882 0 0.741564 0" type="box" rgba="1 0.423529 0.0392157 1" />
+                    <body name="RL_calf" pos="0 0 -0.213">
+                        <inertial pos="0.00429862 0.000976676 -0.146197" quat="0.691246 0.00357467 0.00511118 0.722592" mass="0.195862" diaginertia="0.00149767 0.00148468 3.58427e-05" />
+                        <joint name="RL_calf_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.818 -0.888" damping="0.01" frictionloss="0.2" />
+                        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="calf" />
+                        <geom size="0.1065 0.008 0.008" pos="0 0 -0.1065" quat="0.707107 0 0.707107 0" type="box" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.01" pos="0 0 -0.213" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.02" pos="0 0 -0.213" rgba="1 0.423529 0.0392157 0" />
+                    </body>
+                </body>
+            </body>
+            <body name="FR_hip" pos="0.1881 -0.04675 0">
+                <inertial pos="-0.005657 0.008752 -0.000102" quat="0.50601 0.51272 0.497198 0.483596" mass="0.591" diaginertia="0.000619523 0.000400592 0.000333571" />
+                <joint name="FR_hip_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-0.863 0.863" damping="0.01" frictionloss="0.2" />
+                <geom quat="0 1 0 0" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="hip" />
+                <body name="FR_thigh" pos="0 -0.08 0">
+                    <inertial pos="-0.003342 0.018054 -0.033451" quat="0.638086 -0.0246609 0.075943 0.765814" mass="0.92" diaginertia="0.0045757 0.00444045 0.000641595" />
+                    <joint name="FR_thigh_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-0.686 4.501" damping="0.01" frictionloss="0.2" />
+                    <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="thigh_mirror" />
+                    <geom size="0.1065 0.01225 0.017" pos="-0.015 0 -0.1065" quat="0.670882 0 0.741564 0" type="box" rgba="1 0.423529 0.0392157 1" />
+                    <body name="FR_calf" pos="0 0 -0.213">
+                        <inertial pos="0.00429862 0.000976676 -0.146197" quat="0.691246 0.00357467 0.00511118 0.722592" mass="0.195862" diaginertia="0.00149767 0.00148468 3.58427e-05" />
+                        <joint name="FR_calf_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.818 -0.888" damping="0.01" frictionloss="0.2" />
+                        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="calf" />
+                        <geom size="0.1065 0.008 0.008" pos="0 0 -0.1065" quat="0.707107 0 0.707107 0" type="box" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.01" pos="0 0 -0.213" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.02" pos="0 0 -0.213" rgba="1 0.423529 0.0392157 0" />
+                    </body>
+                </body>
+            </body>
+            <body name="RR_hip" pos="-0.1881 -0.04675 0">
+                <inertial pos="0.005657 0.008752 -0.000102" quat="0.497198 0.483596 0.50601 0.51272" mass="0.591" diaginertia="0.000619523 0.000400592 0.000333571" />
+                <joint name="RR_hip_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-0.863 0.863" damping="0.01" frictionloss="0.2" />
+                <geom quat="0 0 0 -1" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="hip" />
+                <body name="RR_thigh" pos="0 -0.08 0">
+                    <inertial pos="-0.003342 0.018054 -0.033451" quat="0.638086 -0.0246609 0.075943 0.765814" mass="0.92" diaginertia="0.0045757 0.00444045 0.000641595" />
+                    <joint name="RR_thigh_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-0.686 4.501" damping="0.01" frictionloss="0.2" />
+                    <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="thigh_mirror" />
+                    <geom size="0.1065 0.01225 0.017" pos="-0.015 0 -0.1065" quat="0.670882 0 0.741564 0" type="box" rgba="1 0.423529 0.0392157 1" />
+                    <body name="RR_calf" pos="0 0 -0.213">
+                        <inertial pos="0.00429862 0.000976676 -0.146197" quat="0.691246 0.00357467 0.00511118 0.722592" mass="0.195862" diaginertia="0.00149767 0.00148468 3.58427e-05" />
+                        <joint name="RR_calf_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.818 -0.888" damping="0.01" frictionloss="0.2" />
+                        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 1" mesh="calf" />
+                        <geom size="0.1065 0.008 0.008" pos="0 0 -0.1065" quat="0.707107 0 0.707107 0" type="box" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.01" pos="0 0 -0.213" contype="0" conaffinity="0" group="1" rgba="1 0.423529 0.0392157 0" />
+                        <geom size="0.02" pos="0 0 -0.213" rgba="1 0.423529 0.0392157 0" />
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+</mujocoinclude>

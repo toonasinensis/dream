@@ -129,7 +129,9 @@ class HIMPPO:
                 
                 self.actor_critic.act(obs_batch)
                 actions_log_prob_batch = self.actor_critic.get_actions_log_prob(actions_batch)
-                value_batch = self.actor_critic.evaluate(critic_obs_batch)
+                # _, latent_batch = self.actor_critic.estimator.get_latent(obs_batch)#TODO:1025
+                # critic_obs_batch = torch.cat((critic_obs_batch, latent_batch), dim = -1)#TODO:1025
+                value_batch = self.actor_critic.evaluate(critic_obs_batch) 
                 mu_batch = self.actor_critic.action_mean
                 sigma_batch = self.actor_critic.action_std
                 entropy_batch = self.actor_critic.entropy
@@ -150,7 +152,7 @@ class HIMPPO:
                             param_group['lr'] = self.learning_rate
 
                 #Estimator Update
-                estimation_loss, swap_loss,vae_kl_loss = self.actor_critic.estimator.update(obs_batch, critic_obs_batch,next_critic_obs_batch, lr=self.learning_rate)
+                estimation_loss, swap_loss, vae_kl_loss = self.actor_critic.estimator.update(obs_batch, critic_obs_batch, next_critic_obs_batch, lr=self.learning_rate)
 
                 # Surrogate loss
                 ratio = torch.exp(actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch))

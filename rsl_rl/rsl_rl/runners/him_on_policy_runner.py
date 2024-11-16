@@ -92,7 +92,11 @@ class HIMOnPolicyRunner:
         obs = self.env.get_observations()
         privileged_obs = self.env.get_privileged_observations()
         critic_obs = privileged_obs if privileged_obs is not None else obs
+        # _, latent = self.alg.actor_critic.estimator.get_latent(obs) #TODO:1025
+        # critic_obs = torch.cat((privileged_obs, latent), dim = -1) if privileged_obs is not None else obs #TODO:1025
+        
         obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
+        
         self.alg.actor_critic.train() # switch to train mode (for dropout for example)
 
         ep_infos = []
@@ -111,6 +115,10 @@ class HIMOnPolicyRunner:
                     obs, privileged_obs, rewards, dones, infos, termination_ids, termination_privileged_obs = self.env.step(actions)
 
                     critic_obs = privileged_obs if privileged_obs is not None else obs
+                    # _, latent = self.alg.actor_critic.estimator.get_latent(obs) #TODO:1025
+                    # critic_obs = torch.cat((privileged_obs, latent), dim = -1) if privileged_obs is not None else obs #TODO:1025
+                    # termination_privileged_obs = torch.cat((termination_privileged_obs, latent[termination_ids]), dim = -1) if termination_privileged_obs is not None else obs #TODO:1025
+                    
                     obs, critic_obs, rewards, dones = obs.to(self.device), critic_obs.to(self.device), rewards.to(self.device), dones.to(self.device)
                     termination_ids = termination_ids.to(self.device)
                     termination_privileged_obs = termination_privileged_obs.to(self.device)
@@ -243,6 +251,16 @@ class HIMOnPolicyRunner:
 
     def load(self, path, load_optimizer=True):
         loaded_dict = torch.load(path)
+        
+        # print(path)
+        # for key, value in loaded_dict.items():
+        #     if isinstance(value, dict):
+        #         print(f"{key}:")
+        #         for param_key, param_value in value.items():
+        #             print(f"  {param_key} shape: {param_value.shape}")
+        #     else:
+        #         print(f"{key} shape: {value.shape}")
+                
         self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict'])
         if load_optimizer:
             self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])

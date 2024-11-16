@@ -1,0 +1,9 @@
+Sat Oct 26 11:05:34 2024
+WARNING: mju_openResource: unknown file '/home/noname/rl_project/dreambasehim/HIMLoco/legged_gym/resources/go1/xml/world.xml'
+
+Sat Oct 26 14:26:22 2024
+WARNING: mju_openResource: unknown file '/home/noname/rl_project/dreambasehim/HIMLoco/legged_gym/resources/robots/go1.save/xml/world.xml'
+
+Sat Oct 26 14:34:15 2024
+WARNING: mju_openResource: unknown file '/home/noname/rl_project/dreambasehim/HIMLoco/legged_gym/resources/robots/go1.save/xml/world.xml'
+

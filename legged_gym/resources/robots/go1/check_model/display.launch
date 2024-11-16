@@ -1,0 +1,21 @@
+<launch>
+  <param
+    name="robot_description"
+    textfile="../urdf/go1.urdf" />
+
+  <node
+    name="joint_state_publisher_gui"
+    pkg="joint_state_publisher_gui"
+    type="joint_state_publisher_gui" />
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher" />
+  <node
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d /home/noname/github/LocomotionWithNP3O/resources/go1/check_model/go1.rviz"
+    output = "screen"
+  />
+</launch>

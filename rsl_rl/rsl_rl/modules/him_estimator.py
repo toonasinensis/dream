@@ -12,16 +12,13 @@ class HIMEstimator(nn.Module):
     def __init__(self,
                  temporal_steps,
                  num_one_step_obs,
-                 enc_hidden_dims=[128, 64, 16],
-                 tar_hidden_dims=[128, 64],
-                 his_hidden_dims =[512,256],
-                 decoder_hidden_dims = [512, 256, 128],
-                 latent_dims = 16,
+                 encoder_hidden_dims=[256, 128],
+                #  his_hidden_dims =[512,256],
+                 decoder_hidden_dims = [128, 256],
+                 latent_dim = 16,
                  activation='elu',
                  learning_rate=1e-3,
                  max_grad_norm=10.0,
-                 num_prototype=32,
-                 temperature=3.0,
                  **kwargs):
         if kwargs:
             print("Estimator_CL.__init__ got unexpected arguments, which will be ignored: " + str(
@@ -29,55 +26,50 @@ class HIMEstimator(nn.Module):
         super(HIMEstimator, self).__init__()
         activation = get_activation(activation)
 
-        self.latent_dims = latent_dims
+        self.latent_dim = latent_dim
         self.temporal_steps = temporal_steps
         self.num_one_step_obs = num_one_step_obs
-        self.num_latent = enc_hidden_dims[-1]
         self.max_grad_norm = max_grad_norm
-        self.temperature = temperature
-
-        # Encoder
         
-        self.ested_state_num = 3+1+4*3
+        # Encoder
 
- # Build Decoder
-        modules = []
-        # activation_fn = get_activation(activation)
-        decoder_input_dim = latent_dims + self.ested_state_num
-        modules.extend(
-            [nn.Linear(decoder_input_dim, decoder_hidden_dims[0]),
-            activation]
-            )
+        # Build Decoder  
+        decoder_layers = []
+        decoder_input_dim = latent_dim + 3
+        decoder_layers.append(nn.Sequential(nn.Linear(decoder_input_dim, decoder_hidden_dims[0]),
+                                            nn.BatchNorm1d(decoder_hidden_dims[0]),
+                                            nn.ELU()))
         for l in range(len(decoder_hidden_dims)):
             if l == len(decoder_hidden_dims) - 1:
-                modules.append(nn.Linear(decoder_hidden_dims[l],num_one_step_obs))
+                decoder_layers.append(nn.Linear(decoder_hidden_dims[l], num_one_step_obs))
             else:
-                modules.append(nn.Linear(decoder_hidden_dims[l],decoder_hidden_dims[l + 1]))
-                modules.append(activation)
-        self.decoder = nn.Sequential(*modules)
-        
+                decoder_layers.append(nn.Sequential(nn.Linear(decoder_hidden_dims[l], decoder_hidden_dims[l+1]),
+                                        nn.BatchNorm1d(decoder_hidden_dims[l+1]),
+                                        nn.ELU()))
+        self.decoder = nn.Sequential(*decoder_layers)        
         print("decoder",self.decoder)
 
         #HISTORY Encoder 
-        enc_input_dim = self.temporal_steps * self.num_one_step_obs
-        HIS_enc_layers = []
-        for l in range(len(his_hidden_dims) - 1):
-            HIS_enc_layers += [nn.Linear(enc_input_dim, enc_hidden_dims[l]), activation]
-            enc_input_dim = enc_hidden_dims[l]
-        HIS_enc_layers += [nn.Linear(enc_input_dim, latent_dims*4)]#why times 4
-        self.encoder = nn.Sequential(*HIS_enc_layers)
+        encoder_layers = []
+        encoder_input_dim = self.temporal_steps * self.num_one_step_obs
+        encoder_layers.append(nn.Sequential(nn.Linear(encoder_input_dim, encoder_hidden_dims[0]),
+                                            nn.BatchNorm1d(encoder_hidden_dims[0]),
+                                            nn.ELU()))
 
+        encoder_input_dim = self.temporal_steps * self.num_one_step_obs
+        for l in range(len(encoder_hidden_dims) - 1):
+            encoder_layers.append(nn.Sequential(nn.Linear(encoder_hidden_dims[l], encoder_hidden_dims[l+1]),
+                            nn.BatchNorm1d(encoder_hidden_dims[l+1]),
+                            nn.ELU()))
+        self.encoder = nn.Sequential(*encoder_layers)
 
-        self.vel_mu = nn.Linear(latent_dims * 4, self.ested_state_num)
-        self.vel_logvar = nn.Linear(latent_dims * 4, self.ested_state_num)
+        self.fc_mu = nn.Linear(encoder_hidden_dims[-1], latent_dim)
+        self.fc_var = nn.Linear(encoder_hidden_dims[-1], latent_dim)
+        self.fc_vel = nn.Linear(encoder_hidden_dims[-1], 3)
 
-        self.latent_mu = nn.Linear(latent_dims * 4, latent_dims)
-        self.latent_logvar = nn.Linear(latent_dims * 4, latent_dims)
         # Optimizer
         self.learning_rate = learning_rate
         self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-    
-
 
     def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         """
@@ -87,66 +79,57 @@ class HIMEstimator(nn.Module):
         """
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
+        eps = torch.clamp(eps, min=-3, max=3)
         return eps * std + mu
 
     def get_latent(self, obs_history):
-        vel, z ,_,_= self.encode(obs_history)
+        vel, z, _, _ = self.encode(obs_history)
         return vel.detach(), z.detach()
 
-    def forward(self, obs_history):
-        vel, z,_,_ = self.encode(obs_history)
+    def forward(self, obs_history):        
+        encoded = self.encoder(obs_history.detach())
+        vel = self.fc_vel(encoded)
+        z = self.fc_mu(encoded)
         return vel.detach(), z.detach()
-
-    def decode(self, z,v):
-        input = torch.cat([z,v], dim = 1)
+    
+    def decode(self, z, v):
+        input = torch.cat([z, v], dim = 1)
         output = self.decoder(input)
         return output
 
-
     def encode(self, obs_history):
         encoded = self.encoder(obs_history.detach())
-        vel_mu = self.vel_mu(encoded)
-        vel_logvar = self.vel_logvar(encoded)
-        vel = self.reparameterize(vel_mu, vel_logvar)
-        latent_mu = self.latent_mu(encoded)
-        latent_logvar = self.latent_logvar(encoded)
+        vel = self.fc_vel(encoded)
+        latent_mu = self.fc_mu(encoded)
+        latent_logvar = self.fc_var(encoded)
         z = self.reparameterize(latent_mu,latent_logvar) 
-        return vel, z,latent_mu,latent_logvar
-#        self.privileged_obs_buf = torch.cat((current_obs[:, :self.num_one_step_privileged_obs], self.privileged_obs_buf[:, :-self.num_one_step_privileged_obs]), dim=-1)
-    def update(self, obs_history,critic_obs, next_critic_obs, lr=None,kld_weight = 1.0):
+        return vel, z, latent_mu, latent_logvar
+    
+    def update(self, obs_history, critic_obs, next_critic_obs, lr=None, kld_weight = 1.0):
         if lr is not None:
             self.learning_rate = lr
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = self.learning_rate
-        #question
+                
         vel = next_critic_obs[:, self.num_one_step_obs:self.num_one_step_obs+3].detach()
-        base_height = next_critic_obs[:, self.num_one_step_obs+3:self.num_one_step_obs+3+1].detach()
-        # print("vel,",vel,"base_height",base_height)
-        feet_pos = next_critic_obs[:, self.num_one_step_obs+3+1:self.num_one_step_obs+3+1+12].detach()
-        privi_state = next_critic_obs[:, self.num_one_step_obs:self.num_one_step_obs+self.ested_state_num].detach()
         next_obs = next_critic_obs.detach()[:, 3:self.num_one_step_obs+3]
 
-        vel_pred,z,latent_mu,latent_logvar= self.encode(obs_history)
+        vel_pred, z, latent_mu, latent_logvar = self.encode(obs_history)
         # z_t = self.target(next_obs)
         # pred_vel, z_s = z_s[..., :3], z_s[..., 3:]
-        estimation_loss = F.mse_loss(vel_pred, privi_state)
-        obs_next_pred =self.decode(z,vel_pred)
+        estimation_loss = F.mse_loss(vel_pred, vel)
+        obs_next_pred =self.decode(z, vel_pred) 
         reconstruct_loss = F.mse_loss(obs_next_pred, next_obs)
 
         kld_loss = -0.5 * torch.sum(1 + latent_logvar - latent_mu ** 2 - latent_logvar.exp(), dim = 1)
         kld_loss_mean = kld_loss.mean()
-        losses = estimation_loss+reconstruct_loss + kld_loss_mean
+        losses = 5.0 * estimation_loss + reconstruct_loss + kld_weight * kld_loss_mean
 
         self.optimizer.zero_grad()
         losses.backward()
         nn.utils.clip_grad_norm_(self.parameters(), self.max_grad_norm)
         self.optimizer.step()
-
-        return estimation_loss.item(), reconstruct_loss.item(),kld_loss_mean.item()
-
-
-
-
+        return estimation_loss.item(), reconstruct_loss.item(), kld_loss_mean.item()
 
 def get_activation(act_name):
     if act_name == "elu":
